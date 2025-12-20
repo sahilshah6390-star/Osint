@@ -10,8 +10,8 @@ import datetime
 import os
 
 # Bot Configuration
-API_ID = "29478891"
-API_HASH = "43feb597594883965998bdad7cabbaca"
+API_ID = "12328511"
+API_HASH = "87785246d0520062edab3afd987f637a"
 BOT_TOKEN = "8438833923:AAGzxM2EhBtaNWr-mM-jHsKi0x3b81saphw"
 AUTHORIZED_USERS = {6512242172,}
 
