@@ -213,7 +213,7 @@ def welcome_message_text() -> str:
         "🤝 **Refer friends to earn extra credits**\n"
         f"♾️ **Go unlimited for Rs {UNLIMITED_PRICE}**\n\n"
         "📜 **Commands:**\n"
-        "/lookup <userid|@username> - Search user info\n"
+        "/lookup <userid|@userid> - Search user info\n"
         "/redeem - View your stats\n"
         "/leaderboard - Top referrers\n"
         "/refer - Get your referral link\n"
@@ -485,7 +485,7 @@ async def lookup_private_handler(client, message):
     if user_id in AUTHORIZED_USERS:
         args = message.text.split()
         if len(args) < 2:
-            await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @username")
+            await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @userid")
             return
         target = args[1]
         await execute_lookup(message, user_id, target, source="lookup-dm")
@@ -568,7 +568,7 @@ async def lookup_handler(client, message):
 
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @username")
+        await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @userid")
         return
 
     target = args[1]
@@ -797,7 +797,7 @@ async def callback_handler(client, callback):
             "💞 **DT OSINT Bot Help**\n\n"
             "📜 **Commands:**\n"
             "/start - Welcome message\n"
-            "/lookup <userid|@username> - Search user info\n"
+            "/lookup <userid|@userid> - Search user info\n"
             "/redeem - View your stats\n"
             "/refer - Get your referral link\n"
             "/leaderboard - Top referrers\n"
@@ -1085,7 +1085,7 @@ async def help_handler(client, message):
         "💞 **SS OSINT Bot Help**\n\n"
         "📜 **Commands:**\n"
         "/start - Welcome message\n"
-        "/lookup <userid|@username> - Search user info\n"
+        "/lookup <userid|@userid> - Search user info\n"
         "/redeem - View your stats\n"
         "/refer - Get your referral link\n"
         "/leaderboard - Top referrers\n"
