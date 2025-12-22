@@ -1701,7 +1701,7 @@ async def help_handler(client, message):
         f"• {DAILY_LIMIT} free searches daily\n"
         f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
         f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-        "🛟 **Support:** @AstronixHub
+        "🛟 **Support:** @AstronixHub"
     )
 
     await message.reply(help_text, reply_markup=help_keyboard("start"))
