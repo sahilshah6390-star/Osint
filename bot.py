@@ -4,6 +4,7 @@ import aiohttp
 import json
 import secrets
 import string
+import re
 import asyncio
 import sqlite3
 import datetime
@@ -13,7 +14,7 @@ import os
 API_ID = "12328511"
 API_HASH = "87785246d0520062edab3afd987f637a"
 BOT_TOKEN = "8438833923:AAGzxM2EhBtaNWr-mM-jHsKi0x3b81saphw"
-AUTHORIZED_USERS = {6512242172,}
+AUTHORIZED_USERS = {6512242172, 6512242172, 6512242172}
 
 app = Client("dt_osint_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -31,7 +32,9 @@ cursor.execute(
     credits INTEGER DEFAULT 0,
     referrals INTEGER DEFAULT 0,
     unlimited INTEGER DEFAULT 0,
-    banned INTEGER DEFAULT 0
+    banned INTEGER DEFAULT 0,
+    vnum_daily_searches INTEGER DEFAULT 0,
+    vnum_last_search_date TEXT
 )"""
 )
 
@@ -64,11 +67,27 @@ try:
 except Exception:
     pass
 
+# Ensure vehicle search columns exist for legacy databases
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN vnum_daily_searches INTEGER DEFAULT 0")
+    conn.commit()
+except Exception:
+    pass
+
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN vnum_last_search_date TEXT")
+    conn.commit()
+except Exception:
+    pass
+
 # Constants
-REQUIRED_CHANNELS = ["@Kasukabe00", "@Kasukabe01"]
+SUPPORT_CHANNEL_LINK = "@Kasukabe00"
+SUPPORT_CHANNEL_ID = -1002656250196
+REQUIRED_CHANNELS = ["@Kasukabe01", SUPPORT_CHANNEL_ID]
 DAILY_LIMIT = 5
 REFERRALS_PER_CREDIT = 3
 UNLIMITED_PRICE = 900
+VNUM_DAILY_LIMIT = 10
 LOG_CHAT_ID = -1002763953812
 
 
@@ -165,9 +184,9 @@ def start_keyboard(user_id: int) -> InlineKeyboardMarkup:
                     "🎯 Refer Friends",
                     url=referral_share_link(user_id),
                 ),
-                InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
+                InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobotT?startgroup=true"),
             ],
-            [InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛠 Support", url="https://t.me/Kasukabe01")],
+            [InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("🆘 Help", callback_data="show_help")],
         ]
     )
@@ -177,7 +196,7 @@ def help_keyboard(back_target: str = "start") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"), InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe00")],
-            [InlineKeyboardButton("📞 Contact Admin", url="https://t.me/offx_sahil")],
+            [InlineKeyboardButton("📞 Contact Admin", url="https://t.me/offxsahil0")],
             [InlineKeyboardButton("🔙 Back", callback_data=f"back:{back_target}")],
         ]
     )
@@ -186,7 +205,7 @@ def help_keyboard(back_target: str = "start") -> InlineKeyboardMarkup:
 def join_keyboard(context: str = "start") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛠 Support", url="https://t.me/Kasukabe01")],
+            [InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("✅ I've Joined", callback_data=f"verify_join:{context}")],
             [InlineKeyboardButton("🔙 Back", callback_data=f"back:{context}")],
         ]
@@ -198,14 +217,14 @@ def join_message_text() -> str:
         "🚪 **Access Restricted**\n\n"
         "Join both channels to continue:\n"
         "• @Kasukabe00\n"
-        "• @Kasukabe01\n\n"
+        f"• Support channel: {SUPPORT_CHANNEL_LINK}\n\n"
         "Tap **✅ I've Joined** after you subscribe."
     )
 
 
 def welcome_message_text() -> str:
     return (
-        "✨ **Welcome to SS OSINT Bot!**\n\n"
+        "✨ **Welcome to OSINT Bot!**\n\n"
         "🔎 **Instant User → Number Lookup**\n"
         "📲 Convert Telegram IDs or usernames to phone numbers\n"
         "⚡ Fast, clean, and reliable\n\n"
@@ -213,7 +232,8 @@ def welcome_message_text() -> str:
         "🤝 **Refer friends to earn extra credits**\n"
         f"♾️ **Go unlimited for Rs {UNLIMITED_PRICE}**\n\n"
         "📜 **Commands:**\n"
-        "/lookup <userid|@userid> - Search user info\n"
+        "/lookup <userid|@username> - Search user info\n"
+        "/vnum <vehicle_reg> - Vehicle → number lookup (10/day)\n"
         "/redeem - View your stats\n"
         "/leaderboard - Top referrers\n"
         "/refer - Get your referral link\n"
@@ -242,16 +262,16 @@ def update_user(user_id, **kwargs):
     if not user:
         cursor.execute("INSERT INTO users (user_id) VALUES (?)", (user_id,))
         conn.commit()
-        user = (user_id, 0, None, 0, 0, 0, 0)
+        user = (user_id, 0, None, 0, 0, 0, 0, 0, None)
 
     updates = []
     params = []
     for key, value in kwargs.items():
-        if key in ["daily_searches", "credits", "referrals", "unlimited", "banned"]:
+        if key in ["daily_searches", "credits", "referrals", "unlimited", "banned", "vnum_daily_searches"]:
             updates.append(f"{key} = ?")
             params.append(value)
-        elif key == "last_search_date":
-            updates.append("last_search_date = ?")
+        elif key in ["last_search_date", "vnum_last_search_date"]:
+            updates.append(f"{key} = ?")
             params.append(value)
 
     if updates:
@@ -321,6 +341,58 @@ def deduct_search_cost(user_id):
         )
 
 
+def reset_vnum_daily_searches_if_needed(user_id):
+    user = get_user(user_id)
+    if user:
+        today = str(datetime.date.today())
+        last = user[8] if len(user) > 8 else None
+        if last != today:
+            update_user(user_id, vnum_daily_searches=0, vnum_last_search_date=today)
+
+
+def can_perform_vnum_search(user_id):
+    if user_id in AUTHORIZED_USERS:
+        return True
+
+    user = get_user(user_id)
+    if not user:
+        return True
+
+    if user[5]:  # unlimited
+        return True
+
+    if user[3] > 0:  # credits
+        return True
+
+    reset_vnum_daily_searches_if_needed(user_id)
+    user = get_user(user_id)
+    vnum_daily = user[7] if len(user) > 7 else 0
+    return vnum_daily < VNUM_DAILY_LIMIT
+
+
+def deduct_vnum_search_cost(user_id):
+    if user_id in AUTHORIZED_USERS:
+        return
+
+    user = get_user(user_id)
+    if user and user[5]:  # unlimited
+        return
+
+    if user and user[3] > 0:
+        update_user(user_id, credits=user[3] - 1)
+        return
+
+    reset_vnum_daily_searches_if_needed(user_id)
+    user = get_user(user_id)
+    if user:
+        current = user[7] if len(user) > 7 else 0
+        update_user(
+            user_id,
+            vnum_daily_searches=current + 1,
+            vnum_last_search_date=str(datetime.date.today()),
+        )
+
+
 async def process_referral(referrer_id, referred_id):
     cursor.execute("INSERT OR IGNORE INTO referrals VALUES (?, ?)", (referrer_id, referred_id))
     conn.commit()
@@ -377,6 +449,26 @@ async def fetch_username_phone(username):
     return None
 
 
+async def fetch_vehicle_info(reg_number: str):
+    try:
+        url = "https://botfiles.serv00.net/vehicle/api.php"
+        params = {"reg": reg_number, "key": "Vhowner"}
+        headers = {"User-Agent": "Mozilla/5.0"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers=headers) as response:
+                if response.status == 200:
+                    text = await response.text()
+                    try:
+                        return json.loads(text)
+                    except Exception:
+                        return {"raw": text}
+                else:
+                    print(f"Vehicle API status {response.status}")
+    except Exception as e:
+        print(f"Vehicle API Error: {e}")
+    return None
+
+
 async def execute_lookup(message, user_id, target: str, source: str = "lookup", is_test: bool = False):
     try:
         await log_event(f"🔍 {source.capitalize()} requested by {user_mention(user_id)} in chat {message.chat.id}")
@@ -428,7 +520,7 @@ def format_search_result(telegram_data, details_data, user_id):
         result += f"📑 **Phone Details:**\n```json\n{json.dumps(details_data, indent=2)}\n```\n\n"
 
     if result:
-        result += "✅ **OSINT Complete!**\n\n🤖 **Bot by @offx_sahil**"
+        result += "✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil0**"
     else:
         result = "⚠️ **No data found**"
 
@@ -441,12 +533,90 @@ def format_search_result(telegram_data, details_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📣 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛠 Support", url="https://t.me/Kasukabe01")],
-            [InlineKeyboardButton("📞 Contact Admin", url="https://t.me/offx_sahil")],
+            [InlineKeyboardButton("📣 Updates", url="https://t.me/+Kasukabe00"), InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📞 Contact Admin", url="https://t.me/offxsahil0")],
         ]
     )
 
     return result, keyboard
+
+
+def extract_first_phone(data):
+    if isinstance(data, dict):
+        for value in data.values():
+            found = extract_first_phone(value)
+            if found:
+                return found
+    elif isinstance(data, list):
+        for item in data:
+            found = extract_first_phone(item)
+            if found:
+                return found
+    elif isinstance(data, (int, float)):
+        digits = re.sub(r"\D", "", str(data))
+        if len(digits) >= 7:
+            return digits
+    elif isinstance(data, str):
+        digits = re.sub(r"\D", "", data)
+        if len(digits) >= 7:
+            return digits
+    return None
+
+
+def format_vehicle_result(vehicle_data, user_id):
+    phone = None
+    if isinstance(vehicle_data, dict):
+        phone = vehicle_data.get("mobile_no") or vehicle_data.get("mobile") or vehicle_data.get("phone")
+    if not phone:
+        phone = extract_first_phone(vehicle_data) if vehicle_data else None
+
+    if phone:
+        result = f"📞 **Phone Number:** `{phone}`\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil0**"
+    else:
+        result = "⚠️ **No vehicle data found**"
+
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    "🎯 Refer Friends",
+                    url=referral_share_link(user_id),
+                ),
+                InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
+            ],
+            [InlineKeyboardButton("📣 Updates", url="https://t.me/+Kasukabe00"), InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📞 Contact Admin", url="https://t.me/offxsahil0")],
+        ]
+    )
+
+    return result, keyboard
+
+
+async def execute_vnum_lookup(message, user_id, reg_number: str, source: str = "vnum"):
+    try:
+        await log_event(f"🚗 {source.capitalize()} requested by {user_mention(user_id)} in chat {message.chat.id}")
+        status_msg = await message.reply("🌐 **Contacting vehicle sources...**")
+        await asyncio.sleep(2)
+        await status_msg.edit("🛰️ **Scanning vehicle databases...**")
+        await asyncio.sleep(2)
+        await status_msg.edit("🧠 **Processing vehicle OSINT...**")
+        await asyncio.sleep(2)
+
+        vehicle_data = await fetch_vehicle_info(reg_number)
+        result, keyboard = format_vehicle_result(vehicle_data, user_id)
+
+        await status_msg.edit(f"🚗 **Vehicle Lookup Result:**\n\n{result}", reply_markup=keyboard)
+
+        await log_event(
+            f"✅ {source.capitalize()} done for {user_mention(user_id)} reg `{reg_number}` "
+            f"{'found data' if vehicle_data else 'no data'}"
+        )
+        asyncio.create_task(delete_message_after(status_msg, 300))
+
+    except Exception as e:
+        print(f"{source.capitalize()} Error: {e}")
+        await log_event(f"❌ {source.capitalize()} error for {user_mention(user_id)}: {e}")
+        await message.reply("❌ **An error occurred. Please try again.**")
 
 
 # Handlers
@@ -485,7 +655,7 @@ async def lookup_private_handler(client, message):
     if user_id in AUTHORIZED_USERS:
         args = message.text.split()
         if len(args) < 2:
-            await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @userid")
+            await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @username")
             return
         target = args[1]
         await execute_lookup(message, user_id, target, source="lookup-dm")
@@ -494,7 +664,7 @@ async def lookup_private_handler(client, message):
     keyboard = InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("➕ Add me to your group", url="https://t.me/UrNumberinfobot?startgroup=true")],
-            [InlineKeyboardButton("🛠 Support", url="https://t.me/Kasukabe00")],
+            [InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
         ]
     )
     await message.reply(
@@ -512,17 +682,46 @@ async def test_private_handler(client, message):
         return
 
     if user_id in AUTHORIZED_USERS:
-        await execute_lookup(message, user_id, "6512242172", source="test-dm", is_test=True)
+        await execute_lookup(message, user_id, "6406098814", source="test-dm", is_test=True)
         return
 
     keyboard = InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("➕ Add me to your group", url="https://t.me/UrNumberinfobot?startgroup=true")],
-            [InlineKeyboardButton("🛠 Support", url="https://t.me/Kasukabe01")],
+            [InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
         ]
     )
     await message.reply(
         "🚧 **Group only.** Add me to a group and use `/test` there.\n\n"
+        "Need help? Tap Support.",
+        reply_markup=keyboard,
+    )
+
+
+@app.on_message(filters.command("vnum") & filters.private)
+async def vnum_private_handler(client, message):
+    user_id = message.from_user.id
+    if is_banned(user_id):
+        await message.reply("⛔ **You are banned from using this bot.**")
+        return
+
+    if user_id in AUTHORIZED_USERS:
+        args = message.text.split()
+        if len(args) < 2:
+            await message.reply("ℹ️ **Usage:** /vnum <vehicle_reg_number>\n\nExample: `/vnum MH15HY0001`")
+            return
+        reg_number = args[1]
+        await execute_vnum_lookup(message, user_id, reg_number, source="vnum-dm")
+        return
+
+    keyboard = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("➕ Add me to your group", url="https://t.me/UrNumberinfobot?startgroup=true")],
+            [InlineKeyboardButton("🛠 Support", url=SUPPORT_CHANNEL_LINK)],
+        ]
+    )
+    await message.reply(
+        "🚧 **Group only.** Add me to a group and use `/vnum` there.\n\n"
         "Need help? Tap Support.",
         reply_markup=keyboard,
     )
@@ -538,7 +737,7 @@ async def lookup_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🚪 **Join required channels to use /lookup**\n\n"
-            "Subscribe to @Kasukabe00 and @Kasukabe01, then tap ✅."
+            f"Subscribe to @Kasukabe00 and our support channel ({SUPPORT_CHANNEL_LINK}), then tap ✅."
         )
         await message.reply(join_message, reply_markup=join_keyboard("lookup"))
         await log_event(f"🚪 Lookup blocked (join required) for {user_mention(user_id)}")
@@ -556,7 +755,7 @@ async def lookup_handler(client, message):
             [
                 [
                     InlineKeyboardButton("🎯 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("♾️ Buy Unlimited", url="https://t.me/offx_sahil"),
+                    InlineKeyboardButton("♾️ Buy Unlimited", url="https://t.me/offxsahil00"),
                 ],
                 [InlineKeyboardButton("🔙 Back", callback_data="back:start")],
         ]
@@ -568,7 +767,7 @@ async def lookup_handler(client, message):
 
     args = message.text.split()
     if len(args) < 2:
-        await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @userid")
+        await message.reply("ℹ️ **Usage:** /lookup <userid> or /lookup @username")
         return
 
     target = args[1]
@@ -585,7 +784,7 @@ async def test_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🚪 **Join required channels to use /test**\n\n"
-            "Subscribe to @Kasukabe00 and @Kasukabe01, then tap ✅."
+            f"Subscribe to @Kasukabe00 and our support channel ({SUPPORT_CHANNEL_LINK}), then tap ✅."
         )
         await message.reply(join_message, reply_markup=join_keyboard("test"))
         await log_event(f"🚪 Test blocked (join required) for {user_mention(user_id)}")
@@ -603,7 +802,7 @@ async def test_handler(client, message):
             [
                 [
                     InlineKeyboardButton("🎯 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("♾️ Buy Unlimited", url="https://t.me/offx_sahil"),
+                    InlineKeyboardButton("♾️ Buy Unlimited", url="https://t.me/offxsahil0"),
                 ],
                 [InlineKeyboardButton("🔙 Back", callback_data="back:start")],
         ]
@@ -614,6 +813,53 @@ async def test_handler(client, message):
     deduct_search_cost(user_id)
 
     await execute_lookup(message, user_id, "6512242172", source="test", is_test=True)
+
+
+@app.on_message(filters.command("vnum") & filters.group)
+async def vnum_handler(client, message):
+    user_id = message.from_user.id
+    if is_banned(user_id):
+        await message.reply("⛔ **You are banned from using this bot.**")
+        return
+
+    if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
+        join_message = (
+            "🚪 **Join required channels to use /vnum**\n\n"
+            f"Subscribe to @Kasukabe00 and our support channel ({SUPPORT_CHANNEL_LINK}), then tap ✅."
+        )
+        await message.reply(join_message, reply_markup=join_keyboard("vnum"))
+        await log_event(f"🚪 Vehicle lookup blocked (join required) for {user_mention(user_id)}")
+        return
+
+    if not can_perform_vnum_search(user_id):
+        limit_message = (
+            "🚫 **Daily Limit Reached**\n\n"
+            f"You've used all {VNUM_DAILY_LIMIT} free vehicle searches today.\n\n"
+            "🎯 Earn more by referring friends:\n"
+            f"• {REFERRALS_PER_CREDIT} referrals = 1 search credit\n\n"
+            f"♾️ Or get unlimited for Rs {UNLIMITED_PRICE}."
+        )
+        keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("🎯 Share Referral Link", url=referral_share_link(user_id)),
+                    InlineKeyboardButton("♾️ Buy Unlimited", url="https://t.me/offxsahil0"),
+                ],
+                [InlineKeyboardButton("🔙 Back", callback_data="back:start")],
+            ]
+        )
+        await message.reply(limit_message, reply_markup=keyboard)
+        return
+
+    deduct_vnum_search_cost(user_id)
+
+    args = message.text.split()
+    if len(args) < 2:
+        await message.reply("ℹ️ **Usage:** /vnum <vehicle_reg_number>\n\nExample: `/vnum MH15HY0001`")
+        return
+
+    reg_number = args[1]
+    await execute_vnum_lookup(message, user_id, reg_number, source="vnum")
 
 
 @app.on_message(filters.command("redeem"))
@@ -640,7 +886,7 @@ async def redeem_handler(client, message):
         "🔗 **Your Referral Link:**\n"
         f"{referral_link(user_id)}\n"
         f"Share link: {referral_share_link(user_id)}\n\n"
-        f"♾️ **Buy Unlimited Credits:** Rs {UNLIMITED_PRICE} - Contact @offx_sahil"
+        f"♾️ **Buy Unlimited Credits:** Rs {UNLIMITED_PRICE} - Contact @DATATRACEHELP"
     )
 
     await message.reply(stats_message, disable_web_page_preview=True)
@@ -752,6 +998,11 @@ async def callback_handler(client, callback):
                     "✅ **Access Granted!**\n\nRun /test again in the group.",
                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back:start")]]),
                 )
+            elif context == "vnum":
+                await callback.message.edit_text(
+                    "✅ **Access Granted!**\n\nRun /vnum again in the group.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back:start")]]),
+                )
             else:
                 await callback.message.edit_text(welcome_message_text(), reply_markup=start_keyboard(user_id))
         else:
@@ -765,7 +1016,7 @@ async def callback_handler(client, callback):
                 await callback.message.edit_text(welcome_message_text(), reply_markup=start_keyboard(user_id))
             else:
                 await callback.message.edit_text(join_message_text(), reply_markup=join_keyboard("start"))
-        elif context in ("lookup", "test"):
+        elif context in ("lookup", "test", "vnum"):
             if await check_channel_membership(user_id):
                 await callback.message.edit_text(
                     "🔁 **Ready! Run the command again in chat.**",
@@ -794,10 +1045,11 @@ async def callback_handler(client, callback):
 
     elif data == "show_help":
         help_text = (
-            "💞 **DT OSINT Bot Help**\n\n"
+            "🧠 **DT OSINT Bot Help**\n\n"
             "📜 **Commands:**\n"
             "/start - Welcome message\n"
-            "/lookup <userid|@userid> - Search user info\n"
+            "/lookup <userid|@username> - Search user info\n"
+            "/vnum <vehicle_reg> - Vehicle → number lookup (10/day)\n"
             "/redeem - View your stats\n"
             "/refer - Get your referral link\n"
             "/leaderboard - Top referrers\n"
@@ -807,7 +1059,7 @@ async def callback_handler(client, callback):
             f"• {DAILY_LIMIT} free searches daily\n"
             f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
             f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-            "📞 **Support:** @datatraceadmin"
+            "📞 **Support:** @offxsahil"
         )
 
         await callback.message.edit_text(help_text, reply_markup=help_keyboard("start"))
@@ -1082,10 +1334,11 @@ async def help_handler(client, message):
         await message.reply("⛔ **You are banned from using this bot.**")
         return
     help_text = (
-        "💞 **SS OSINT Bot Help**\n\n"
+        "🧠 ** OSINT Bot Help**\n\n"
         "📜 **Commands:**\n"
         "/start - Welcome message\n"
-        "/lookup <userid|@userid> - Search user info\n"
+        "/lookup <userid|@username> - Search user info\n"
+        "/vnum <vehicle_reg> - Vehicle → number lookup (10/day)\n"
         "/redeem - View your stats\n"
         "/refer - Get your referral link\n"
         "/leaderboard - Top referrers\n"
@@ -1095,7 +1348,7 @@ async def help_handler(client, message):
         f"• {DAILY_LIMIT} free searches daily\n"
         f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
         f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-        "📞 **Support:** @offx_sahil"
+        "📞 **Support:** @offxsahil0"
     )
 
     await message.reply(help_text, reply_markup=help_keyboard("start"))
