@@ -10,12 +10,13 @@ import asyncio
 import sqlite3
 import datetime
 import os
+from Crypto.Cipher import AES
 
 # Bot Configuration
 API_ID = "12328511"
 API_HASH = "87785246d0520062edab3afd987f637a"
-BOT_TOKEN = "8438833923:AAGzxM2EhBtaNWr-mM-jHsKi0x3b81saphw"
-AUTHORIZED_USERS = {6512242172,}
+BOT_TOKEN = "8475039255:AAGGKwM3HKcfrTYb1oInU6cPvuG8ITiBDSA"
+AUTHORIZED_USERS = {6512242172, 5193826370,}
 
 app = Client("dt_osint_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -82,14 +83,15 @@ except Exception:
     pass
 
 # Constants
-SUPPORT_CHANNEL_LINK = "https://t.me/Kasukabe01"
-SUPPORT_CHANNEL_ID = -1002656250196
-REQUIRED_CHANNELS = ["@Kasukabe00", SUPPORT_CHANNEL_ID]
+SUPPORT_CHANNEL_LINK = "@Kasukabe00"
+SUPPORT_CHANNEL_ID = -1002661857120
+REQUIRED_CHANNELS = ["@Kasukabe01", SUPPORT_CHANNEL_ID]
 DAILY_LIMIT = 5
 REFERRALS_PER_CREDIT = 3
 UNLIMITED_PRICE = 900
 VNUM_DAILY_LIMIT = 10
-LOG_CHAT_ID = -1002656250196
+LOG_CHAT_ID = -1002763953812
+TELEGRAM_LOOKUP_URL = "https://meowmeow.rf.gd/gand/encoresechudaikrvauga.php"
 
 def save_config():
     with open("bot_config.txt", "w") as f:
@@ -206,7 +208,7 @@ def help_keyboard(back_target: str = "start") -> InlineKeyboardMarkup:
 def join_keyboard(context: str = "start") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe 00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("✅ I've Joined", callback_data=f"verify_join:{context}")],
             [InlineKeyboardButton("⬅️ Back", callback_data=f"back:{context}")],
         ]
@@ -217,7 +219,7 @@ def join_message_text() -> str:
     return (
         "🔒 **Access Restricted**\n\n"
         "Join both channels to continue:\n"
-        "📢 @AstronixHub\n"
+        "📢 @Kasukabe00\n"
         f"🛟 Support: {SUPPORT_CHANNEL_LINK}\n\n"
         "Tap **I've Joined ✅** after you subscribe."
     )
@@ -225,7 +227,7 @@ def join_message_text() -> str:
 
 def welcome_message_text() -> str:
     return (
-        "✨ **Welcome to  OSINT Bot!** ✨\n\n"
+        "✨ **Welcome to DT OSINT Bot!** ✨\n\n"
         "📲 **Instant User ➜ Number Lookup**\n"
         "🔎 Convert Telegram IDs or usernames to phone numbers\n"
         "⚡ Fast, clean, and reliable\n\n"
@@ -408,17 +410,58 @@ async def process_referral(referrer_id, referred_id):
 
     await log_event(f" Referral recorded: {user_mention(referrer_id)} referred {user_mention(referred_id)} (total {count})")
 # API Functions
-async def fetch_user_phone(user_id):
+def _try_load_json(text: str):
     try:
-        url = f"https://uidv10.frappeash.workers.dev/lookup?id={user_id}"
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+def _extract_test_cookie(html: str):
+    matches = re.findall(r'toNumbers\("([0-9a-f]+)"\)', html)
+    if len(matches) < 3:
+        return None
+    key_hex, iv_hex, cipher_hex = matches[:3]
+    try:
+        key = bytes.fromhex(key_hex)
+        iv = bytes.fromhex(iv_hex)
+        cipher = bytes.fromhex(cipher_hex)
+        plain = AES.new(key, AES.MODE_CBC, iv).decrypt(cipher)
+        return plain.hex()
+    except Exception as exc:
+        print(f"Cookie decrypt error: {exc}")
+        return None
+
+
+async def fetch_telegram_lookup(identifier: str):
+    try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.text()
-                    return json.loads(data)
+            async def _request(cookie_val=None, include_i=False):
+                params = {"tg": identifier}
+                if include_i:
+                    params["i"] = "1"
+                cookies = {"__test": cookie_val} if cookie_val else None
+                return await session.get(TELEGRAM_LOOKUP_URL, params=params, cookies=cookies)
+
+            first_resp = await _request()
+            first_text = await first_resp.text()
+            data = _try_load_json(first_text)
+            if data:
+                return data
+
+            cookie_val = _extract_test_cookie(first_text)
+            if not cookie_val:
+                return None
+
+            second_resp = await _request(cookie_val, include_i=True)
+            second_text = await second_resp.text()
+            return _try_load_json(second_text)
     except Exception as e:
-        print(f"User ID API Error: {e}")
+        print(f"Telegram lookup error for {identifier}: {e}")
     return None
+
+async def fetch_user_phone(user_id):
+    return await fetch_telegram_lookup(str(user_id))
 
 
 async def fetch_phone_details(phone):
@@ -435,16 +478,7 @@ async def fetch_phone_details(phone):
 
 
 async def fetch_username_phone(username):
-    try:
-        url = f"https://uidv10.frappeash.workers.dev/lookup?id={username.lstrip('@')}"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.text()
-                    return json.loads(data)
-    except Exception as e:
-        print(f"Username API Error: {e}")
-    return None
+    return await fetch_telegram_lookup(username.lstrip("@"))
 
 
 async def fetch_num_to_upi(query: str):
@@ -508,6 +542,7 @@ async def execute_lookup(message, user_id, target: str, source: str = "lookup", 
         await asyncio.sleep(2)
 
         telegram_data = None
+        details_data = None
         if is_test:
             telegram_data = await fetch_user_phone(6406098814)
         else:
@@ -522,9 +557,8 @@ async def execute_lookup(message, user_id, target: str, source: str = "lookup", 
             elif target.isdigit():
                 telegram_data = await fetch_user_phone(int(target))
 
-        details_data = None
         if telegram_data and telegram_data.get("success"):
-            phone = telegram_data.get("number", "")
+            phone = telegram_data.get("number")
             if phone:
                 details_data = await fetch_phone_details(phone)
 
@@ -544,16 +578,24 @@ async def execute_lookup(message, user_id, target: str, source: str = "lookup", 
         await message.reply("⚠️ **An error occurred. Please try again.**")
 
 def format_search_result(telegram_data, details_data, user_id):
-    result = ""
+    lines = []
     if telegram_data and telegram_data.get("success"):
         phone = telegram_data.get("number", "")
-        result += f"📞 **Phone Number:** `{phone}`\n\n"
+        country_code = telegram_data.get("country_code") or ""
+        country_name = telegram_data.get("country") or telegram_data.get("country_name") or ""
 
+        if phone:
+            lines.append(f"📞 **Phone Number:** `{phone}`")
+        if country_code:
+            lines.append(f"📡 **Country Code:** {country_code}")
+        if country_name:
+            lines.append(f"🌍 **Country:** {country_name}")
     if details_data:
-        result += f"🧾 **Phone Details:**\n```json\n{json.dumps(details_data, indent=2)}\n```\n\n"
+        lines.append("🧾 **Phone Details:**")
+        lines.append(f"```json\n{json.dumps(details_data, indent=2)}\n```")
 
-    if result:
-        result += "✅ **OSINT Complete!**\n\n🤖 **Bot by @AstronixHub**"
+    if lines:
+        result = "\n".join(lines) + "\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil0**"
     else:
         result = "🚫 **No data found**"
 
@@ -566,7 +608,7 @@ def format_search_result(telegram_data, details_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/+3WuFZLe68wU4YThl"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
         ]
     )
@@ -606,7 +648,7 @@ def format_num_to_upi_result(api_data, user_id):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/+3WuFZLe68wU4YThl"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
         ]
     )
@@ -720,7 +762,7 @@ def format_vehicle_result(vehicle_data, user_id):
         phone = extract_first_phone(vehicle_data) if vehicle_data else None
 
     if phone:
-        result = f"📞 **Phone Number:** `{phone}`\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @AstronixHub**"
+        result = f"📞 **Phone Number:** `{phone}`\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil0**"
     else:
         result = "🚫 **No vehicle data found**"
 
@@ -733,7 +775,7 @@ def format_vehicle_result(vehicle_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/+3WuFZLe68wU4YThl"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
         ]
     )
@@ -758,7 +800,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
         ]
         if source:
             lines.append(f"🔗 Source: {source}")
-        result = "\n".join(lines) + "\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @AstronixHub**"
+        result = "\n".join(lines) + "\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil**"
     else:
         result = "🚫 **No data found for this FAM ID**"
 
@@ -768,7 +810,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/+3WuFZLe68wU4YThl"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
         ]
     )
@@ -948,7 +990,7 @@ async def lookup_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /lookup**\n\n"
-            "📢 Subscribe to @AstronixHub\n"
+            "📢 Subscribe to @Kasukabe00\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -997,7 +1039,7 @@ async def test_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /test**\n\n"
-            "📢 Subscribe to @AstronixHub\n"
+            "📢 Subscribe to @Kasukabe00\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1040,7 +1082,7 @@ async def num_to_upi_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /numtoupi**\n\n"
-            "📢 Subscribe to @AstronixHub\n"
+            "📢 Subscribe to @Kasukabe00\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1089,7 +1131,7 @@ async def fam_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /fam**\n\n"
-            "📢 Subscribe to @AstronixHub\n"
+            "📢 Subscribe to @Kasukabe00\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1136,7 +1178,7 @@ async def vnum_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /vnum**\n\n"
-            "📢 Subscribe to @AstronixHub\n"
+            "📢 Subscribe to @Kasukabe00\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1380,7 +1422,7 @@ async def callback_handler(client, callback):
             f"• {DAILY_LIMIT} free searches daily\n"
             f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
             f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-            "🛟 **Support:** @AstronixHub"
+            "🛟 **Support:** @Kasukabe00"
         )
 
         await callback.message.edit_text(help_text, reply_markup=help_keyboard("start"))
@@ -1685,7 +1727,7 @@ async def help_handler(client, message):
         await message.reply(" **You are banned from using this bot.**")
         return
     help_text = (
-        "🧠 ** OSINT Bot Help**\n\n"
+        "🧠 **DT OSINT Bot Help**\n\n"
         "⚙️ **Commands**\n"
         "• /start — Welcome message\n"
         "• /lookup <userid|@username> — Search user info\n"
@@ -1701,7 +1743,7 @@ async def help_handler(client, message):
         f"• {DAILY_LIMIT} free searches daily\n"
         f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
         f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-        "🛟 **Support:** @AstronixHub"
+        "🛟 **Support:** @offxsahil0"
     )
 
     await message.reply(help_text, reply_markup=help_keyboard("start"))
@@ -1792,7 +1834,7 @@ async def set_unlimited_price_handler(client, message):
 
 
 if __name__ == "__main__":
-    print(" OSINT Bot Starting...")
+    print("DT OSINT Bot Starting...")
     print(f"Daily {DAILY_LIMIT} free searches")
     print("Referral system active")
     print("Auto-delete results after 5 minutes")
