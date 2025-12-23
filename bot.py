@@ -990,7 +990,7 @@ async def lookup_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /lookup**\n\n"
-            "📢 Subscribe to @Kasukabe00\n"
+            "📢 Subscribe to @Kasukabe01\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1039,7 +1039,7 @@ async def test_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /test**\n\n"
-            "📢 Subscribe to @Kasukabe00\n"
+            "📢 Subscribe to @Kasukabe01\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1082,7 +1082,7 @@ async def num_to_upi_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /numtoupi**\n\n"
-            "📢 Subscribe to @Kasukabe00\n"
+            "📢 Subscribe to @Kasukabe01\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1131,7 +1131,7 @@ async def fam_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /fam**\n\n"
-            "📢 Subscribe to @Kasukabe00\n"
+            "📢 Subscribe to @Kasukabe01\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
@@ -1178,7 +1178,7 @@ async def vnum_handler(client, message):
     if user_id not in AUTHORIZED_USERS and not await check_channel_membership(user_id):
         join_message = (
             "🔒 **Join required channels to use /vnum**\n\n"
-            "📢 Subscribe to @Kasukabe00\n"
+            "📢 Subscribe to @Kasukabe01\n"
             f"🛟 Join support: {SUPPORT_CHANNEL_LINK}\n\n"
             "Tap **I've Joined ✅** after subscribing."
         )
