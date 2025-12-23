@@ -84,7 +84,7 @@ except Exception:
 
 # Constants
 SUPPORT_CHANNEL_LINK = "@Kasukabe00"
-SUPPORT_CHANNEL_ID = -1002661857120
+SUPPORT_CHANNEL_ID = -1002656250196
 REQUIRED_CHANNELS = ["@Kasukabe01", SUPPORT_CHANNEL_ID]
 DAILY_LIMIT = 5
 REFERRALS_PER_CREDIT = 3
@@ -199,7 +199,7 @@ def help_keyboard(back_target: str = "start") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"), InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00")],
-            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
+            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
             [InlineKeyboardButton("⬅️ Back", callback_data=f"back:{back_target}")],
         ]
     )
@@ -609,7 +609,7 @@ def format_search_result(telegram_data, details_data, user_id):
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
             [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
-            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
+            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
 
@@ -649,7 +649,7 @@ def format_num_to_upi_result(api_data, user_id):
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
             [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
-            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
+            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
 
@@ -776,7 +776,7 @@ def format_vehicle_result(vehicle_data, user_id):
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
             [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
-            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
+            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
 
@@ -811,7 +811,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
             [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
-            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/offxsahil0")],
+            [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
 
@@ -1010,7 +1010,7 @@ async def lookup_handler(client, message):
             [
                 [
                     InlineKeyboardButton("📤 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/offxsahil0"),
+                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/AstronixHub"),
                 ],
                 [InlineKeyboardButton("⬅️ Back", callback_data="back:start")],
             ]
@@ -1059,7 +1059,7 @@ async def test_handler(client, message):
             [
                 [
                     InlineKeyboardButton("📤 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/offxsahil0"),
+                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/AstronixHub"),
                 ],
                 [InlineKeyboardButton("⬅️ Back", callback_data="back:start")],
             ]
@@ -1102,7 +1102,7 @@ async def num_to_upi_handler(client, message):
             [
                 [
                     InlineKeyboardButton("📤 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/offxsahil0"),
+                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/AstronixHub"),
                 ],
                 [InlineKeyboardButton("⬅️ Back", callback_data="back:start")],
             ]
@@ -1151,7 +1151,7 @@ async def fam_handler(client, message):
             [
                 [
                     InlineKeyboardButton("📤 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/offxsahil0"),
+                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/AstronixHub"),
                 ],
                 [InlineKeyboardButton("⬅️ Back", callback_data="back:start")],
             ]
@@ -1198,7 +1198,7 @@ async def vnum_handler(client, message):
             [
                 [
                     InlineKeyboardButton("📤 Share Referral Link", url=referral_share_link(user_id)),
-                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/offxsahil0"),
+                    InlineKeyboardButton("💎 Buy Unlimited", url="https://t.me/AstronixHub"),
                 ],
                 [InlineKeyboardButton("⬅️ Back", callback_data="back:start")],
             ]
