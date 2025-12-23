@@ -83,9 +83,9 @@ except Exception:
     pass
 
 # Constants
-SUPPORT_CHANNEL_LINK = "@Kasukabe00"
-SUPPORT_CHANNEL_ID = -1002661857120
-REQUIRED_CHANNELS = ["@Kasukabe01", SUPPORT_CHANNEL_ID]
+SUPPORT_CHANNEL_LINK = "https://t.me/Kasukabe01"
+SUPPORT_CHANNEL_ID = -1002656250196
+REQUIRED_CHANNELS = ["@Kasukabe00", SUPPORT_CHANNEL_ID]
 DAILY_LIMIT = 5
 REFERRALS_PER_CREDIT = 3
 UNLIMITED_PRICE = 900
@@ -208,7 +208,7 @@ def help_keyboard(back_target: str = "start") -> InlineKeyboardMarkup:
 def join_keyboard(context: str = "start") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe 00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("✅ I've Joined", callback_data=f"verify_join:{context}")],
             [InlineKeyboardButton("⬅️ Back", callback_data=f"back:{context}")],
         ]
@@ -219,7 +219,7 @@ def join_message_text() -> str:
     return (
         "🔒 **Access Restricted**\n\n"
         "Join both channels to continue:\n"
-        "📢 @Kasukabe00\n"
+        "📢 @Kasukabe01\n"
         f"🛟 Support: {SUPPORT_CHANNEL_LINK}\n\n"
         "Tap **I've Joined ✅** after you subscribe."
     )
@@ -544,7 +544,7 @@ async def execute_lookup(message, user_id, target: str, source: str = "lookup", 
         telegram_data = None
         details_data = None
         if is_test:
-            telegram_data = await fetch_user_phone(6406098814)
+            telegram_data = await fetch_user_phone(6512242172)
         else:
             if target.startswith("@"):
                 try:
@@ -608,7 +608,7 @@ def format_search_result(telegram_data, details_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -648,7 +648,7 @@ def format_num_to_upi_result(api_data, user_id):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -775,7 +775,7 @@ def format_vehicle_result(vehicle_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -800,7 +800,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
         ]
         if source:
             lines.append(f"🔗 Source: {source}")
-        result = "\n".join(lines) + "\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil**"
+        result = "\n".join(lines) + "\n\n✅ **OSINT Complete!**\n\n🤖 **Bot by @offxsahil0**"
     else:
         result = "🚫 **No data found for this FAM ID**"
 
@@ -810,7 +810,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -1069,7 +1069,7 @@ async def test_handler(client, message):
 
     deduct_search_cost(user_id)
 
-    await execute_lookup(message, user_id, "6512242172", source="test", is_test=True)
+    await execute_lookup(message, user_id, "6406098814", source="test", is_test=True)
 
 
 @app.on_message(filters.command("numtoupi") & filters.group)
@@ -1239,7 +1239,7 @@ async def redeem_handler(client, message):
         "🔗 **Your Referral Link**\n"
         f"{referral_link(user_id)}\n"
         f"📤 Share link: {referral_share_link(user_id)}\n\n"
-        f"💎 **Buy Unlimited Credits:** Rs {UNLIMITED_PRICE} - Contact @offxsahil0"
+        f"💎 **Buy Unlimited Credits:** Rs {UNLIMITED_PRICE} - Contact @DATATRACEHELP"
     )
 
     await message.reply(stats_message, disable_web_page_preview=True)
@@ -1422,7 +1422,7 @@ async def callback_handler(client, callback):
             f"• {DAILY_LIMIT} free searches daily\n"
             f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
             f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-            "🛟 **Support:** @Kasukabe00"
+            "🛟 **Support:** @Kasukabe01"
         )
 
         await callback.message.edit_text(help_text, reply_markup=help_keyboard("start"))
@@ -1743,7 +1743,7 @@ async def help_handler(client, message):
         f"• {DAILY_LIMIT} free searches daily\n"
         f"• {REFERRALS_PER_CREDIT} referrals = 1 credit\n"
         f"• Unlimited plan: Rs {UNLIMITED_PRICE}\n\n"
-        "🛟 **Support:** @offxsahil0"
+        "🛟 **Support:** @Kasukabe01"
     )
 
     await message.reply(help_text, reply_markup=help_keyboard("start"))
