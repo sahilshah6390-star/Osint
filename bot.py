@@ -608,7 +608,7 @@ def format_search_result(telegram_data, details_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -648,7 +648,7 @@ def format_num_to_upi_result(api_data, user_id):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -775,7 +775,7 @@ def format_vehicle_result(vehicle_data, user_id):
                 ),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
@@ -810,7 +810,7 @@ def format_fam_result(fam_data, user_id, fam_id: str):
                 InlineKeyboardButton("🤝 Refer Friends", url=referral_share_link(user_id)),
                 InlineKeyboardButton("➕ Add to Group", url="https://t.me/UrNumberinfobot?startgroup=true"),
             ],
-            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe01"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
+            [InlineKeyboardButton("📢 Updates", url="https://t.me/Kasukabe00"), InlineKeyboardButton("🛟 Support", url=SUPPORT_CHANNEL_LINK)],
             [InlineKeyboardButton("👤 Contact Admin", url="https://t.me/AstronixHub")],
         ]
     )
